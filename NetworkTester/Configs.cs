@@ -4,7 +4,6 @@ using System.Text.Json;
 class Configs {
     public int RefreshDelay { get; set; } = 1000;
     public int WindowWidth { get; set; } = 200;
-    public int PingResponceTimeOut { get; set; } = 2000;
     public int PingTimeOut { get; set; } = 2000;
     public int PingAttempsCount { get; set; } = 4;
     public string DefaultMessage { get; set; } = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaq";
