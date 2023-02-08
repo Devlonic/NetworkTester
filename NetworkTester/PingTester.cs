@@ -1,9 +1,19 @@
 ﻿using System.Diagnostics;
 using System.Net.NetworkInformation;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 class PingTester {
-    public PingResult Check(Host host, Configs configs) {
+    private readonly Host host;
+    private readonly Configs configs;
+
+    public event EventHandler<PingTesterEventArgs>? OnPingLost;
+    public PingTester(Host host, Configs configs) {
+        this.host = host;
+        this.configs = configs;
+    }
+    private bool prevOper = true;
+    public PingResult Check() {
         if ( configs.PingAttempsCount == 0 )
             throw new ArgumentOutOfRangeException(nameof(configs.PingAttempsCount));
 
@@ -25,10 +35,19 @@ class PingTester {
             replies.Add(reply);
             if ( reply.Status == IPStatus.Success ) {
                 wasSuccess = true;
+                prevOper = true;
                 break;
             }
-        }
+            else {
+                if ( prevOper is true ) {
+                    this.OnPingLost?.Invoke(this, new PingTesterEventArgs() {
+                        Host = this.host,
+                    });
+                    prevOper = false;
+                }
 
+            }
+        }
         return new PingResult() {
             AllReplies = replies,
             AtLeastOneSuccess = wasSuccess,

@@ -43,34 +43,58 @@ Console.Clear();
 Console.SetCursorPosition(0, 0);
 Console.CursorVisible = false;
 tasks.Clear();
+Console.WriteLine($"IP\t\tName\t\t\t\t\t    Status\tTotal success\tTotal fails\tRefresh\tAverage time");
 foreach ( var host in hosts ) {
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
     tasks.Add(Task.Run(async () => {
         int count = 0;
+        int countSuccess = 0;
+        int countFails = 0;
+
         lock ( tasks ) {
             Console.SetCursorPosition(0, host.Position);
             Console.Write($"{host.Ip}\t{host.Name}");
         }
-        while ( true ) {
-            PingTester tester = new PingTester();
+        PingTester tester = new PingTester(host, configs);
+        tester.OnPingLost += (sender, e) => {
+            lock ( tasks ) {
+                Console.SetCursorPosition(60, e.Host.Position);
+                for ( int i = 0; i < 50; i++ ) {
+                    Console.Write(' ');
+                }
+                Console.SetCursorPosition(60, host.Position);
+                Console.ForegroundColor = ConsoleColor.Black;
+                Console.BackgroundColor = ConsoleColor.DarkYellow;
+                Console.Write($"MISSED");
+                Console.ResetColor();
+            }
 
-            var res = tester.Check(host, configs);
+        };
+        while ( true ) {
+            var res = tester.Check();
             lock ( tasks ) {
                 Console.SetCursorPosition(60, host.Position);
+                for ( int i = 0; i < 50; i++ ) {
+                    Console.Write(' ');
+                }
+                Console.SetCursorPosition(60, host.Position);
+
                 if ( res.AtLeastOneSuccess is true ) {
                     Console.ForegroundColor = ConsoleColor.Black;
                     Console.BackgroundColor = ConsoleColor.Green;
                     Console.Write($"ONLINE ");
                     Console.ResetColor();
 
-                    Console.Write($"\tSUCCES:{res.CountSuccess}\tFAILED:{res.CountFailed}\t{++count}\tAVG: {res.AverageTime}             ");
+                    Console.Write($"\tSUCCES:{countSuccess += res.CountSuccess}\tFAILED:{countFails += res.CountFailed}\t{++count}\tAVG: {res.AverageTime}             ");
                 }
                 else {
                     Console.ForegroundColor = ConsoleColor.White;
                     Console.BackgroundColor = ConsoleColor.Red;
                     Console.Write($"OFFLINE");
+                    countFails += res.CountFailed;
+                    Console.Write($"\t{++count} {string.Join(' ', res.AllReplies.Select(r => r.Status.ToString()))}");
                     Console.ResetColor();
-                    Console.Write($"\tFAILED:{res.CountFailed} ({string.Join(' ', res.AllReplies.Select(r => r.Status.ToString()))})     ");
+
                 }
             }
             await Task.Delay(configs.RefreshDelay);
