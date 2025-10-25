@@ -71,33 +71,38 @@ foreach ( var host in hosts ) {
 
         };
         while ( true ) {
-            var res = tester.Check();
-            lock ( tasks ) {
-                Console.SetCursorPosition(60, host.Position);
-                for ( int i = 0; i < 50; i++ ) {
-                    Console.Write(' ');
-                }
-                Console.SetCursorPosition(60, host.Position);
+            try {
+                var res = tester.Check();
+                lock ( tasks ) {
+                    Console.SetCursorPosition(60, host.Position);
+                    for ( int i = 0; i < 50; i++ ) {
+                        Console.Write(' ');
+                    }
+                    Console.SetCursorPosition(60, host.Position);
 
-                if ( res.AtLeastOneSuccess is true ) {
-                    Console.ForegroundColor = ConsoleColor.Black;
-                    Console.BackgroundColor = ConsoleColor.Green;
-                    Console.Write($"ONLINE ");
-                    Console.ResetColor();
+                    if ( res.AtLeastOneSuccess is true ) {
+                        Console.ForegroundColor = ConsoleColor.Black;
+                        Console.BackgroundColor = ConsoleColor.Green;
+                        Console.Write($"ONLINE ");
+                        Console.ResetColor();
 
-                    Console.Write($"\tSUCCES:{countSuccess += res.CountSuccess}\tFAILED:{countFails += res.CountFailed}\t{++count}\tAVG: {res.AverageTime}             ");
-                }
-                else {
-                    Console.ForegroundColor = ConsoleColor.White;
-                    Console.BackgroundColor = ConsoleColor.Red;
-                    Console.Write($"OFFLINE");
-                    countFails += res.CountFailed;
-                    Console.Write($"\t{++count} {string.Join(' ', res.AllReplies.Select(r => r.Status.ToString()))}");
-                    Console.ResetColor();
+                        Console.Write($"\tSUCCES:{countSuccess += res.CountSuccess}\tFAILED:{countFails += res.CountFailed}\t{++count}\tAVG: {res.AverageTime}             ");
+                    }
+                    else {
+                        Console.ForegroundColor = ConsoleColor.White;
+                        Console.BackgroundColor = ConsoleColor.Red;
+                        Console.Write($"OFFLINE");
+                        countFails += res.CountFailed;
+                        Console.Write($"\t{++count} {string.Join(' ', res.AllReplies.Select(r => r.Status.ToString()))}");
+                        Console.ResetColor();
 
+                    }
                 }
+                await Task.Delay(configs.RefreshDelay);
             }
-            await Task.Delay(configs.RefreshDelay);
+            catch ( Exception ) {
+            }
+            
         }
     }));
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
